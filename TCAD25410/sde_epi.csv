@@ -1,0 +1,22 @@
+$global coordinateSystem=DFISE 
+$global Xmin=0, Xmax=@wtot@
+# $global dYmax=1e-2
+
+ITO,ITO,ITO.par,0.2,,,(yref 0.01 0.02)
+PCBM,PCBM,PCBM.par,0.05,1E+019,,(yref 0.005 0.01)
+MAPbI3,MAPbI3,MAPbI3.par,0.29,1E+017,,(yref 0.01 0.03)
+PEDOT,PEDOT,PEDOT.par,0.01,-1E+018,,(yref 0.002 0.005)
+Silver,Silver,Silver.par,0.08,,,(yref 0.01 0.02)
+
+# PCBM = ZnO = ETL
+# MAPbI3 = PbS-I = Active layer
+# PEDOT = PbS-EDT = HTL
+# invert layers and contacts
+
+# chatGPT
+# 總結網格設置建議：
+# ITO 層：最小網格 5-10 nm，最大網格 20-30 nm
+# ETL 層：最小網格 2-5 nm，最大網格 10 nm
+# Active Layer 層：最小網格 5-10 nm，最大網格 20-30 nm
+# HTL 層：最小網格 1-2 nm，最大網格 5 nm
+# 金屬電極層：最小網格 5-10 nm，最大網格 20 nm

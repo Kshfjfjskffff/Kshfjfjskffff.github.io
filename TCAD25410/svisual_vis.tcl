@@ -1,5 +1,5 @@
 # $Id: //tcad/support/main/examples/opto/solarcell/iiiv/sc-iiiv-sj-epi-eqe/svisual_vis.tcl#13 $
-#setdep @node|sdevice@
+	#setdep @node|sdevice@
 
 #; ----------------------------------------
 # This script plots
@@ -17,6 +17,7 @@
 echo "################################################################"
 echo "Initialization"
 echo "################################################################"
+
 echo "sourcing libraries"
 load_library physicalconstants
 
@@ -67,22 +68,39 @@ load_file $gcbias.plt -name WithBias($n)
 load_file $gc.plt -name WithBiasSignal($n)
 load_file $gcspec.plt -name Spectrum($n)
 
+# load_file @ P.322
+
+# gc		= nX_des.plt 		= WithBias(X)
+# gcbias	= bias_nX_des.plt	= WithBiasSignal(X)
+# gcspec	= nX_spec_des.plt	= Spectrum(X)
+
 #---------
 echo "creating plots"
 if {[lsearch [list_plots] Plot_JSpectra] == -1} {
 	create_plot -1d -name Plot_JSpectra
 	link_plots [list_plots] -unlink		
 }
+# Create one xy plot named "Plot_JSpectra".
 
 if {[lsearch [list_plots] Plot_RQESpectra] == -1} {
 	create_plot -1d -name Plot_RQESpectra
 	link_plots [list_plots] -unlink		
 }
+# Create one xy plot named "Plot_RQESpectra".
+
+
+# create_plot @ P.232
+# link_plots @ P.302 : Links plot properties of two or more plots.
+# 	-unlink: Removes linking.
+# list_plots @ P.314 : Returns a list of plot names according to the given pattern. If no pattern is specified, all plots are returned.
 
 echo "################################################################"
 echo "Plotting Spectral Current Densities"
 echo "################################################################"
-select_plots Plot_JSpectra
+
+# =======================================================================================
+
+select_plots Plot_JSpectra ;# Select_plots @ P.344
 echo "creating wavelength curve"
 create_curve -name wl($n) -dataset WithBiasSignal($n) \
 	-axisX $dsWavelength -axisY $dsWavelength
@@ -149,6 +167,8 @@ if {[info exists runVisualizerNodesTogether]} {
 		-color green -line_style solid -line_width 3 \
 		-show_markers -markers_size 10 -markers_type $symbol
 }
+
+# =======================================================================================
 
 #------------------------------
 echo "Plotting Reflectance spectra"

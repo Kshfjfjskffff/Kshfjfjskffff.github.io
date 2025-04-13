@@ -29,15 +29,14 @@ set NSYMBOLS [llength $SYMBOL]
 set symbol   [lindex  $SYMBOL [expr $i%$NSYMBOLS]]
 
 echo "defining physical constants"
-set h $::const::PlanckConstant
-set c $::const::SpeedOfLight
-set q $::const::ElementaryCharge
+set h $::const::PlanckConstant ;# unit: SI
+set c $::const::SpeedOfLight ;# unit: SI
+set q $::const::ElementaryCharge ;# unit: SI
 
 echo "defining unit conversion factors"
-set cmtoum 1e2
-set umtocm 1e-4
-set umtom 1e-6
-set AtomA 1e3
+set umtocm 1e-4 ;# 1um = $umtocm * 1cm
+set umtom 1e-6 ;# 1um = $umtom * 1m
+set AtomA 1e3 ;# 1A = $AtomA * 1mA
 
 echo "defining some parameters"
 set iqeFromJphSwitch 0 ;# 1: calculates IQE=Jsc_sig/Jph_sig 0: calculates IQE=EQE/(1-R)
@@ -54,17 +53,16 @@ set gc "n${n}_des"
 set gcbias "bias_n${n}_des"
 set gcspec "n${n}_spec_des"
 set spectrum "!(puts -nonewline $spectrum)!"
-
 echo "loading plt files"
 load_file $gcbias.plt -name WithBias($n)
 load_file $gc.plt -name WithBiasSignal($n)
 load_file $gcspec.plt -name Spectrum($n)
-
-# load_file @ P.322
-
-# gc		= nX_des.plt 		= WithBias(X)
-# gcbias	= bias_nX_des.plt	= WithBiasSignal(X)
-# gcspec	= nX_spec_des.plt	= Spectrum(X)
+# 載入下面這 3 個由 SDEVICE 所匯出的檔案，並將其資料分別放入各資料庫(dataset)中，命名如下 :
+# |		File		|	Dataset Name		|
+# |	------------	|	----------------	|
+# |	nX_des.plt		|	WithBias($n)		|
+# |	bias_nX_des.plt	|	WithBiasSignal($n)	|
+# |	nX_spec_des.plt	|	Spectrum($n)		|
 
 #---------
 echo "creating plots"
@@ -72,13 +70,13 @@ if {[lsearch [list_plots] Plot_JSpectra] == -1} {
 	create_plot -1d -name Plot_JSpectra
 	link_plots [list_plots] -unlink		
 }
-# Create one xy plot named "Plot_JSpectra".
+# 創建一個名為「Plot_JSpectra」的 xy 軸。
 
 if {[lsearch [list_plots] Plot_RQESpectra] == -1} {
 	create_plot -1d -name Plot_RQESpectra
 	link_plots [list_plots] -unlink		
 }
-# Create one xy plot named "Plot_RQESpectra".
+# 創建一個名為「Plot_RQESpectra」的 xy 軸。
 
 # create_plot @ P.232
 # link_plots @ P.302 : Links plot properties of two or more plots.
@@ -88,29 +86,43 @@ if {[lsearch [list_plots] Plot_RQESpectra] == -1} {
 echo "Plotting Spectral Current Densities"
 
 select_plots Plot_JSpectra ;# Select_plots @ P.344
+# 選擇名為「Plot_JSpectra」的 xy 坐標軸，進行接下來的操作。
 
 echo "creating wavelength curve"
 create_curve -name wl($n) -dataset WithBiasSignal($n) -axisX $dsWavelength -axisY $dsWavelength
-# 創建了一個名為
+# 創建一個名為「wl($n)」的曲線，x 軸與 y 軸皆為SDEVICE的波長，之後會刪掉。
 create_variable -name Wavelength -dataset CurrentDensities($n) -values [get_variable_data -dataset WithBiasSignal($n) $dsWavelength]
+# 創立一組名為「Wavelength」的變數列，放入名為「CurrentDensities($n)」的資料庫中，變數列來源為SDEVICE的波長。這個「Wavelength」變數列在很後面才會用到。
 
 echo "creating incident photon current density (signal) (Jin_sig (mA/cm2)) curve"
-create_curve -name Jin_sig($n) -function "$AtomA*$q*<wl($n)>*$umtom*$signalIntensity/($h*$c)"
+create_curve -name Jin_sig($n) -function "$AtomA*$q*<wl($n)>*$umtom*$signalIntensity/($h*$c)"; # unit: mA/cm2
+# 創建一個名為「Jin_sig($n)」的曲線，這個曲線是由「wl($n)」的曲線進行如上的調整的。見 greadme.pdf，P.18，式 (12)。
 create_variable -name Jin_sig -dataset CurrentDensities($n) -values [get_curve_data Jin_sig($n) -axisY]
+# 創立一組名為「Jin_sig」的變數列，放入名為「CurrentDensities($n)」的資料庫中，這個變數列是取自「Jin_sig($n)」的曲線的 y 軸。
 
 remove_curves "wl($n)"
-
+# 將名為「wl($n)」的曲線刪除。
 
 echo "creating signal photogenerated current density (Jph_sig (mA/cm2)) curve"
 # Computing bias photogenerated current density
 set intGopt_bias [get_variable_data -dataset WithBias($n) $dsOpticalGeneration]
+# 設立一個名為「intGopt_bias」數列，該數列取自名為「WithBias($n)」的資料庫中，$dsOpticalGeneration 的部分，即"IntegrSemiconductor OpticalGeneration"。
+
 set Jph_bias [expr $AtomA*$q*$umtocm*$intGopt_bias/$wtot] ;#mA/cm2
+# 設立一個名為「Jph_bias」數列，該數列由名為「intGopt_bias」數列，經過如上的計算而得。
+
 echo [format "Bias photogenerated current density is %.4g mA/cm2" $Jph_bias] 
+# 這只是輸出一句話而已，不重要。
+
 #----------
 # Computing signal photogenerated current density
 set intGopt_tot [get_variable_data -dataset WithBiasSignal($n) $dsOpticalGeneration]
+# 設立一個名為「intGopt_tot」的數列，該數列取自名為「WithBiasSignal($n)」的資料庫中，$dsOpticalGeneration 的部分，即"IntegrSemiconductor OpticalGeneration"。
 set Jph_tot [list]
+# 設立一個名為「Jph_tot」的空數列。
 set Jph_sig [list]
+# 設立一個名為「Jph_sig」的空數列。
+
 foreach intGopttot $intGopt_tot {
 	# Computing total photogenerated current density 
 	set jphtot [expr $AtomA*$q*$umtocm*$intGopttot/$wtot] ;#mA/cm2
@@ -118,9 +130,10 @@ foreach intGopttot $intGopt_tot {
 	# Computing signal photogenerated current density by substracting white light bias
 	lappend Jph_sig [expr $jphtot - $Jph_bias] ;#mA/cm2
 }
+# 將每一個在名為「intGopt_tot」的數列中的數，分別經過如上上及如上的運算後，加入名為「Jph_tot」的數列及名為「Jph_sig」的空數列。
+
 create_variable -name Jph_sig -dataset CurrentDensities($n) -values $Jph_sig 
-create_curve -name Jph_sig($n) -dataset CurrentDensities($n) \
-	-axisX Wavelength -axisY Jph_sig ;#mA/cm2	
+create_curve -name Jph_sig($n) -dataset CurrentDensities($n) -axisX Wavelength -axisY Jph_sig ;#mA/cm2	
 
 ----------------
 echo "creating signal short-circuit current density (Jsc_sig (mA/cm2)) curve"

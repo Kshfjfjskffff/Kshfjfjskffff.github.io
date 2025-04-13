@@ -3,8 +3,7 @@
 
 #; ----------------------------------------
 # This script plots
-# a) Spectral Current Densities: incident photon current density, 
-#    photogenerated current density and short-circuit current density 
+# a) Spectral Current Densities: incident photon current density, photogenerated current density and short-circuit current density 
 # b) Reflectance spectra
 # c) QE spectra under short-circuit conditions
 # 
@@ -14,55 +13,48 @@
 #	jsc_eqe [mA/cm2]: Short-circuit current density from EQE
 #; ----------------------------------------
 
-echo "################################################################"
 echo "Initialization"
-echo "################################################################"
 
 echo "sourcing libraries"
 load_library physicalconstants
 
-#--------------
 set i @node:index@
+set wtot @wtot@	;# device width in x direction
+set signalIntensity @signalIntensity@ ;# W/cm2
+
 #- Automatic alternating symbol assignment tied to node index
-#----------------------------------------------------------------------#
+--------------------------------------------------------#
 set SYMBOL  [list square circle diamond squaref circlef diamondf plus x]
 set NSYMBOLS [llength $SYMBOL]
 set symbol   [lindex  $SYMBOL [expr $i%$NSYMBOLS]]
 
-#--------------
 echo "defining physical constants"
 set h $::const::PlanckConstant
 set c $::const::SpeedOfLight
 set q $::const::ElementaryCharge
 
-#--------------
 echo "defining unit conversion factors"
 set cmtoum 1e2
 set umtocm 1e-4
 set umtom 1e-6
 set AtomA 1e3
 
-#--------------
 echo "defining some parameters"
 set iqeFromJphSwitch 0 ;# 1: calculates IQE=Jsc_sig/Jph_sig 0: calculates IQE=EQE/(1-R)
 set n @node|sdevice@
-echo "defining files to be loaded"
-set gc "n${n}_des"
-set gcbias "bias_n${n}_des"
-set gcspec "n${n}_spec_des"
-set spectrum "!(puts -nonewline $spectrum)!"
 
-set wtot @wtot@	;# device width in x direction
-set signalIntensity @signalIntensity@ ;# W/cm2
-
-#---------
 echo "defining datasets"
 set dsWavelength "Device=,File=CommandFile/Physics,DefaultRegionPhysics,ModelParameter=Optics/Excitation/Wavelength"
 set dsCurrent "cathode TotalCurrent"
 set dsOpticalGeneration  "IntegrSemiconductor OpticalGeneration"
 set groupNameTMM "LayerStack(unnamed_0)"
 
-#---------
+echo "defining files to be loaded"
+set gc "n${n}_des"
+set gcbias "bias_n${n}_des"
+set gcspec "n${n}_spec_des"
+set spectrum "!(puts -nonewline $spectrum)!"
+
 echo "loading plt files"
 load_file $gcbias.plt -name WithBias($n)
 load_file $gc.plt -name WithBiasSignal($n)
@@ -88,33 +80,27 @@ if {[lsearch [list_plots] Plot_RQESpectra] == -1} {
 }
 # Create one xy plot named "Plot_RQESpectra".
 
-
 # create_plot @ P.232
 # link_plots @ P.302 : Links plot properties of two or more plots.
 # 	-unlink: Removes linking.
 # list_plots @ P.314 : Returns a list of plot names according to the given pattern. If no pattern is specified, all plots are returned.
 
-echo "################################################################"
 echo "Plotting Spectral Current Densities"
-echo "################################################################"
-
-# =======================================================================================
 
 select_plots Plot_JSpectra ;# Select_plots @ P.344
-echo "creating wavelength curve"
-create_curve -name wl($n) -dataset WithBiasSignal($n) \
-	-axisX $dsWavelength -axisY $dsWavelength
-create_variable -name Wavelength -dataset CurrentDensities($n) \
-	-values [get_variable_data -dataset WithBiasSignal($n) $dsWavelength]
 
-#----------
+echo "creating wavelength curve"
+create_curve -name wl($n) -dataset WithBiasSignal($n) -axisX $dsWavelength -axisY $dsWavelength
+# 創建了一個名為
+create_variable -name Wavelength -dataset CurrentDensities($n) -values [get_variable_data -dataset WithBiasSignal($n) $dsWavelength]
+
 echo "creating incident photon current density (signal) (Jin_sig (mA/cm2)) curve"
 create_curve -name Jin_sig($n) -function "$AtomA*$q*<wl($n)>*$umtom*$signalIntensity/($h*$c)"
-create_variable -name Jin_sig -dataset CurrentDensities($n) \
-	-values [get_curve_data Jin_sig($n) -axisY]
+create_variable -name Jin_sig -dataset CurrentDensities($n) -values [get_curve_data Jin_sig($n) -axisY]
+
 remove_curves "wl($n)"
 
-#------------------------------
+
 echo "creating signal photogenerated current density (Jph_sig (mA/cm2)) curve"
 # Computing bias photogenerated current density
 set intGopt_bias [get_variable_data -dataset WithBias($n) $dsOpticalGeneration]
@@ -136,7 +122,7 @@ create_variable -name Jph_sig -dataset CurrentDensities($n) -values $Jph_sig
 create_curve -name Jph_sig($n) -dataset CurrentDensities($n) \
 	-axisX Wavelength -axisY Jph_sig ;#mA/cm2	
 
-#------------------------------
+----------------
 echo "creating signal short-circuit current density (Jsc_sig (mA/cm2)) curve"
 # Computing bias short-circuit current density 
 set Jsc_bias [get_variable_data -dataset WithBias($n) $dsCurrent]
@@ -170,7 +156,7 @@ if {[info exists runVisualizerNodesTogether]} {
 
 # =======================================================================================
 
-#------------------------------
+----------------
 echo "Plotting Reflectance spectra"
 select_plots Plot_RQESpectra
 #----------

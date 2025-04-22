@@ -46,7 +46,7 @@ Electrode {
 
 *--------------------------------------------------
 Plot {
-*- Doping Profiles	
+*- Doping Profiles
 	DopingConcentration DonorConcentration AcceptorConcentration
 *- Band structure
 	BandGap BandGapNarrowing ElectronAffinity
@@ -132,24 +132,14 @@ Physics {
 	Mobility(ConstantMobility)
 	EffectiveIntrinsicDensity(NoBandGapNarrowing)
 	Optics(
-	  	ComplexRefractiveIndex (WavelengthDep(Real Imag))
-		OpticalGeneration (
-			QuantumYield (
-			StepFunction (EffectiveBandgap)
-		) * generated carriers/photon, default: 1
-		ComputeFromSpectrum(
-			Select(
-			Condition="!(puts -nonewline $spectrumstart)! <= $wavelength && $wavelength <= !(puts -nonewline $spectrumend)!"
-		)
-			keepSpectralData
-		)
-		ComputeFromMonochromaticSource
-		) * end OpticalGeneration
+		* 1
+		ComplexRefractiveIndex (WavelengthDep(Real Imag))
+		* 2
 		Excitation (
 			Wavelength = !(puts -nonewline $wstart)! * Incident light wavelength [um]
-			Theta= 0				* Normal incidence
-			Polarization= 0.5		* Unpolarized light
-			Intensity  = 0			* Incident light intensity [W/cm2]
+			Theta= 0			* Normal incidence
+			Polarization= 0.5	* Unpolarized light
+			Intensity  = 0		* Incident light intensity [W/cm2]
 			Window (
 				Line (  
 				* for 1D we have no front metalization
@@ -158,9 +148,24 @@ Physics {
 				) *end Line
 			) * end window
 		) * end Excitation
+		* 3
+		OpticalGeneration (
+			QuantumYield (
+				StepFunction (EffectiveBandgap)
+			) * generated carriers/photon, default: 1
+			ComputeFromSpectrum(
+				Select(
+					Condition="!(puts -nonewline $spectrumstart)! <= $wavelength && $wavelength <= !(puts -nonewline $spectrumend)!"
+				)
+				keepSpectralData
+			)
+			ComputeFromMonochromaticSource
+		) * end OpticalGeneration
+
+		* 4
 		OpticalSolver (
 			TMM (
-				IntensityPattern= StandingWave	
+				IntensityPattern= StandingWave
 				LayerStackExtraction ()*end LayerStackExtraction
 			) *end TMM
 		)	* end OpticalSolver

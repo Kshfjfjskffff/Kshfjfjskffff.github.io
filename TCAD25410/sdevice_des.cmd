@@ -1,31 +1,45 @@
-# Parameters: signalIntansity, av, TrapDensity
+# Par: SRH, Trap
 
 !(
+	set signalIntansity 0.02
 	set spectrum "@pwd@/par/spectra/wl20.txt"
-	set spectrumstart 0.4
-	set spectrumend 1.1
-	set wavelengthlist {}
-	set fid [open $spectrum r]
-	while { [gets $fid LINE] >= 0 } {
-		set LINE [string trim $LINE]
-		if { [string range $LINE 0 0] == "#" || [string length $LINE] == 0} {continue}
-		if {![regexp {^[0-9\.eE\-\+]+} [lindex $LINE 0]]} {continue}
-		set w [lindex $LINE 0]
-		if {$spectrumstart <= $w && $w <= $spectrumend} {lappend wavelengthlist $w}
-	}
-	close $fid
-	set wavelengthlist [lsort -real $wavelengthlist]
-	set wstart [lindex $wavelengthlist 0]
-	set wend [lindex $wavelengthlist end]
-	set wsteps [llength $wavelengthlist]
-	puts "* wavelength range: \[$wstart, $wend\] entries: $wsteps"
-	set timelist {}
-	foreach w $wavelengthlist {
-		lappend timelist [expr 1.*($w-$wstart)/($wend-$wstart)]
-	}
-)!
+	set WavelengthStart_nm 400
+	set WavelengthEnd_nm 1080
+	set WavelengthStep_nm 20
+)!	
+	
+!(
+	set WavelengthStart_nm [expr {double($WavelengthStart_nm)}]
+	set WavelengthEnd_nm [expr {double($WavelengthEnd_nm)}]
+	set ngthStep_nm [expr {double($WavelengthStep_nm)}]
 
-# Now, we have: wstart, wend, wsteps, wavelengthlist, timelist.
+	set WavelengthList_nm [list]
+	set WavelengthElement_nm $WavelengthStart_nm
+	while {$WavelengthElement_nm < $WavelengthEnd_nm} {
+		lappend WavelengthList_nm $WavelengthElement_nm
+		set WavelengthElement_nm [expr $WavelengthElement_nm + $WavelengthStep_nm]
+	}
+	lappend WavelengthList_nm $WavelengthEnd_nm
+	# puts "nm: $WavelengthList_nm"
+
+	set WavelengthList_um [list]
+	foreach num $WavelengthList_nm {
+		lappend WavelengthList_um [expr {$num / 1000.0}]
+	}
+	# puts "um: $WavelengthList_um"
+	
+	set WavelengthStart_um [lindex $WavelengthList_um 0]
+	set WavelengthEnd_um [lindex $WavelengthList_um end]
+	# puts $WavelengthStart_um
+	# puts $WavelengthEnd_um
+	
+	set timelist {}
+	foreach w $WavelengthList_um {
+		lappend timelist [expr 1.*($w-$WavelengthStart_um)/($WavelengthEnd_um-$WavelengthStart_um)]
+	}
+	# puts $timelist
+		
+)!
 
 File {
 	*-Input
@@ -40,7 +54,7 @@ File {
 }
 
 Electrode {
-	{ Name= "anode"  Voltage= @av@ }
+	{ Name= "anode"  Voltage= 0 }
 	{ Name= "cathode"  Voltage= 0 }
 }
 
@@ -71,12 +85,17 @@ Plot {
 	OpticalIntensity AbsorbedPhotonDensity OpticalGeneration	
 }
 
+# -> nX_des.tdr
+
 *--------------------------------------------------
 CurrentPlot {
 	ModelParameter="Wavelength"
 	OpticalGeneration(Integrate(Semiconductor)) *used to calculate IQE in Inspect
 	AbsorbedPhotonDensity(Integrate(Semiconductor) ) 
 }
+
+# -> ??_des.plt
+
 *--------------------------------------------------
 Physics {
 	AreaFactor= @< 1e11/wtot>@ * to get current in mA/cm^2
@@ -134,9 +153,10 @@ Physics {
 	Optics(
 		* 1
 		ComplexRefractiveIndex (WavelengthDep(Real Imag))
+		
 		* 2
 		Excitation (
-			Wavelength = !(puts -nonewline $wstart)! * Incident light wavelength [um]
+			Wavelength = !(puts -nonewline $WavelengthStart_um)! * Incident light wavelength [um]
 			Theta= 0			* Normal incidence
 			Polarization= 0.5	* Unpolarized light
 			Intensity  = 0		* Incident light intensity [W/cm2]
@@ -148,6 +168,7 @@ Physics {
 				) *end Line
 			) * end window
 		) * end Excitation
+		
 		* 3
 		OpticalGeneration (
 			QuantumYield (
@@ -155,7 +176,7 @@ Physics {
 			) * generated carriers/photon, default: 1
 			ComputeFromSpectrum(
 				Select(
-					Condition="!(puts -nonewline $spectrumstart)! <= $wavelength && $wavelength <= !(puts -nonewline $spectrumend)!"
+					Condition="!(puts -nonewline $WavelengthStart_um)! <= $wavelength && $wavelength <= !(puts -nonewline $WavelengthEnd_um)!"
 				)
 				keepSpectralData
 			)
@@ -171,7 +192,6 @@ Physics {
 		)	* end OpticalSolver
 	) * end optics
 }
-
 
 	#if @Trap@ == 1
 # Active Layer
@@ -250,39 +270,41 @@ Math {
 }
 
 Solve{
+	* 1.
 	NewCurrentPrefix= "tmp_"
 	Poisson
 	
-	* get bias current without monochromatic light
-	NewCurrentPrefix = "bis_"
+	* 2. get bias current without monochromatic light
+	NewCurrentPrefix = "bias_" * -> bias_nX_des.plt
 	Coupled {Poisson Electron Hole}
-	
-	NewCurrentPrefix= ""                    
-	* switch on monochromatic light
+
+	* 3. switch on monochromatic light
+	NewCurrentPrefix= "" * -> nX_des.plt
+
 	Quasistationary ( 
 		InitialStep = 1
 		MaxStep = 1
 		Minstep = 1
 		Goal {
 			modelParameter="Intensity"
-			value=@signalIntensity@ 
+			value = !(puts -nonewline $signalIntansity)!
 		}
-	)
-	{
+	){
 		Coupled {Poisson Electron Hole}
 		# Plot(FilePrefix=n@node@ NoOverwrite)
 	}
 
-	* ramp through wavelength
+	* 4. ramp through wavelength
 	Quasistationary ( 
 		InitialStep = 1
 		MaxStep = 1
 		Minstep = 1
-		Goal { modelParameter="Wavelength" value=!(puts -nonewline $wend)! }
+		Goal { modelParameter="Wavelength" value=!(puts -nonewline $WavelengthEnd_um)! }
 		){ 
-		Coupled {Poisson Electron Hole}
-		Plot(FilePrefix=n@node@ NoOverwrite)
- 		CurrentPlot(Time=(!(puts -nonewline "[join [lrange $timelist 1 end] "\;"]")!))
+			Coupled {Poisson Electron Hole}
+			# Plot(FilePrefix=n@node@ NoOverwrite)
+ 			CurrentPlot(Time=(!(puts -nonewline "[join [lrange $timelist 1 end] "\;"]")!))
 		}
-	System("rm -f tmp*") *remove the plot we dont need anymore.              
+	
+	System("rm -f tmp*") *remove the plot we dont need anymore.
 }

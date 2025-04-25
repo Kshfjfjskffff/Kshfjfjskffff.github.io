@@ -48,7 +48,7 @@ File {
 	*-Output	
 		Current = "@plot@"
 		Plot = "@tdrdat@"
-		SpectralPlot = "n@node@_spec"
+#		SpectralPlot = "n@node@_spec"
 		Output = "@log@"
 }
 
@@ -87,13 +87,13 @@ Plot {
 CurrentPlot {
 	ModelParameter="Wavelength"
 	OpticalGeneration(Integrate(Semiconductor)) *used to calculate IQE in Inspect
-	AbsorbedPhotonDensity(Integrate(Semiconductor))
+	AbsorbedPhotonDensity(Integrate(Semiconductor) ) 
 }
-# -> _des.plt
 
-*--------------------------------------------------
+# -> ??_des.plt
+
 Physics {
-	AreaFactor= @< 1e11/wtot>@ * to get current in mA/cm^2
+	AreaFactor= @<1e11/wtot>@ * to get current in mA/cm^2
 	Fermi
 	HeteroInterface
 # ==============================================================
@@ -133,9 +133,9 @@ Physics {
 #		)
 #	)
 # -------------------------------------------------------------
-	#if @SRH@ == 1
+	#if @node@ > 1
 	Recombination(SRH)
-	#elif @SRH@ == 2
+	#else
 	Recombination(
 		SRH(
 			ElectricField(Lifetime=Hurkx)
@@ -149,31 +149,29 @@ Physics {
 		* 1
 		ComplexRefractiveIndex (WavelengthDep(Real Imag))
 		
-		* 2
+		* 2. See P.687
 		Excitation (
-			Wavelength = !(puts -nonewline $WavelengthStart_um)! * Incident light wavelength [um]
+			Intensity  = 0		* [W/cm2]
+			Wavelength = !(puts -nonewline $WavelengthStart_um)! * [um]
 			Theta= 0			* Normal incidence
 			Polarization= 0.5	* Unpolarized light
-			Intensity  = 0		* Incident light intensity [W/cm2]
-			Window (
+			Window ("ttestt") (
 				Line (  
-				X1= 0
-				X2= @wtot@
+					X1= 0
+					X2= @wtot@
 				) *end Line
 			) * end window
 		) * end Excitation
 		
 		* 3
 		OpticalGeneration (
-			QuantumYield (
-				StepFunction (EffectiveBandgap)
-			) * generated carriers/photon, default: 1
-			ComputeFromSpectrum(
-				Select(
-					Condition="!(puts -nonewline $WavelengthStart_um)! <= $wavelength && $wavelength <= !(puts -nonewline $WavelengthEnd_um)!"
-				)
-				keepSpectralData
-			)
+			QuantumYield (Unity)
+#			ComputeFromSpectrum(
+#				Select(
+#					Condition="!(puts -nonewline $WavelengthStart_um)! <= $wavelength && $wavelength <= !(puts -nonewline $WavelengthEnd_um)!"
+#				)
+#				keepSpectralData
+#			)
 			ComputeFromMonochromaticSource
 		) * end OpticalGeneration
 
@@ -184,10 +182,14 @@ Physics {
 				LayerStackExtraction ()*end LayerStackExtraction
 			) *end TMM
 		)	* end OpticalSolver
+		
+		* 5 (See P.681 and P.1702)
+#		Verbosity = 0
 	) * end optics
 }
 
-	#if @Trap@ == 1
+	#if @node@ == 0
+
 # Active Layer
 Physics (Region="MAPbI3") {
 	Traps(
@@ -224,7 +226,6 @@ Physics (Region="PEDOT") {
 	)
 }
 	#endif
-
 
 # For Math section, see Chapter 6, P.200.
 Math {
@@ -264,15 +265,15 @@ Math {
 }
 
 Solve{
-	* 1.
+	* [1]
 	NewCurrentPrefix= "tmp_"
 	Poisson
 	
-	* 2. get bias current without monochromatic light
+	* [2] get bias current without monochromatic light
 	NewCurrentPrefix = "bias_" * -> bias_nX_des.plt
 	Coupled {Poisson Electron Hole}
 
-	* 3. switch on monochromatic light
+	* [3] switch on monochromatic light
 	NewCurrentPrefix= "" * -> nX_des.plt
 
 	Quasistationary ( 
@@ -285,10 +286,10 @@ Solve{
 		}
 	){
 		Coupled {Poisson Electron Hole}
-		# Plot(FilePrefix=n@node@ NoOverwrite)
+#		Plot(FilePrefix=n@node@ NoOverwrite)
 	}
 
-	* 4. ramp through wavelength
+	* [4] ramp through wavelength
 	Quasistationary ( 
 		InitialStep = 1
 		MaxStep = 1
@@ -296,8 +297,10 @@ Solve{
 		Goal { modelParameter="Wavelength" value=!(puts -nonewline $WavelengthEnd_um)! }
 		){ 
 			Coupled {Poisson Electron Hole}
-			# Plot(FilePrefix=n@node@ NoOverwrite)
- 			CurrentPlot(Time=(!(puts -nonewline "[join [lrange $timelist 1 end] "\;"]")!))
+#			Plot(FilePrefix=n@node@ NoOverwrite)
+			CurrentPlot(
+				Time=(!(puts -nonewline "[join [lrange $timelist 1 end] "\;"]")!)
+			)
 		}
 	
 	System("rm -f tmp*") *remove the plot we dont need anymore.

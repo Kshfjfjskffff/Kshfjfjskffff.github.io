@@ -1,11 +1,11 @@
 # Par: SRH, Trap
 
 !(
-	set signalIntansity 0.02
 	set spectrum "@pwd@/par/spectra/wl20.txt"
 	set WavelengthStart_nm 400
 	set WavelengthEnd_nm 1080
 	set WavelengthStep_nm 20
+	set signalIntansity 0.02
 )!	
 	
 !(
@@ -37,8 +37,7 @@
 	foreach w $WavelengthList_um {
 		lappend timelist [expr 1.*($w-$WavelengthStart_um)/($WavelengthEnd_um-$WavelengthStart_um)]
 	}
-	# puts $timelist
-		
+	# puts $timelist	
 )!
 
 File {
@@ -84,7 +83,6 @@ Plot {
   ComplexRefractiveIndex QuantumYield
 	OpticalIntensity AbsorbedPhotonDensity OpticalGeneration	
 }
-
 # -> nX_des.tdr
 
 *--------------------------------------------------
@@ -162,7 +160,6 @@ Physics {
 			Intensity  = 0		* Incident light intensity [W/cm2]
 			Window (
 				Line (  
-				* for 1D we have no front metalization
 				X1= 0
 				X2= @wtot@
 				) *end Line

@@ -111,5 +111,4 @@ set_axis_prop -axis y \
 set_legend_prop \
 	-label_font_size 12 \
 	-label_font_att bold \
-	-location top_left 
-	
+	-location top_left

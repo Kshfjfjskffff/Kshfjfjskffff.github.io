@@ -42,14 +42,14 @@
 
 File {
 	*-Input
-		Grid=         "@tdr@"
-		Parameter=    "@mprpar@"
-		IlluminationSpectrum= "!(puts -nonewline $spectrum)!"
+		Grid = "@tdr@"
+		Parameter = "@mprpar@"
+		IlluminationSpectrum = "!(puts -nonewline $spectrum)!"
 	*-Output	
-		Current=      "@plot@"
-		Plot=         "@tdrdat@"
-		SpectralPlot= "n@node@_spec"
-		Output=       "@log@"
+		Current = "@plot@"
+		Plot = "@tdrdat@"
+		SpectralPlot = "n@node@_spec"
+		Output = "@log@"
 }
 
 Electrode {
@@ -57,7 +57,6 @@ Electrode {
 	{ Name= "cathode"  Voltage= 0 }
 }
 
-*--------------------------------------------------
 Plot {
 *- Doping Profiles
 	DopingConcentration DonorConcentration AcceptorConcentration
@@ -85,14 +84,12 @@ Plot {
 }
 # -> nX_des.tdr
 
-*--------------------------------------------------
 CurrentPlot {
 	ModelParameter="Wavelength"
 	OpticalGeneration(Integrate(Semiconductor)) *used to calculate IQE in Inspect
-	AbsorbedPhotonDensity(Integrate(Semiconductor) ) 
+	AbsorbedPhotonDensity(Integrate(Semiconductor))
 }
-
-# -> ??_des.plt
+# -> _des.plt
 
 *--------------------------------------------------
 Physics {

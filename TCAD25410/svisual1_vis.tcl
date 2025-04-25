@@ -21,10 +21,9 @@ set umtocm 1e-4
 set umtom 1e-6
 set AtomA 1e3
 
-
 if {[lsearch [list_plots] Plot_RQESpectra] == -1} {
 	create_plot -1d -name Plot_RQESpectra
-	link_plots [list_plots] -unlink		
+	link_plots [list_plots] -unlink
 }
 
 set Wavelength_um [get_variable_data -dataset WithBiasSignal($n) $dsWavelength]
